@@ -7,46 +7,65 @@ using System.Threading.Tasks;
 namespace Algorithms
 {
     public class Sudoku
-    {
-        int[,] unsolvedSudoku =
+    { 
+        public class PossibleValues
         {
-            { 1,6,4,0,0,0,0,0,2 },
-            { 2,0,0,4,0,3,9,1,0 },
-            { 0,0,5,0,8,0,4,0,7 },
-            { 0,9,0,0,0,6,5,0,0},
-            { 5,0,0,1,0,2,0,0,8},
-            { 0,0,8,9,0,0,0,3,0},
-            { 8,0,9,0,4,0,2,0,0},
-            { 0,7,3,5,0,9,0,0,1},
-            { 4,0,0,0,0,0,6,7,9},
-
-        };
+            public int Row;
+            public int Col;
+            public List<int> Values;
+        }
 
         static int[] PossilbeValues = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-        public 
-        public static int[,] Solve(int[,] unsolvedSudoku)
+         
+        public static void Solve(int[,] sudoku)
         {
-            for(int row =0; row < 9; row++ )
-            {
-                for (int col = 0; col < 9; col++)
-                {
-                    if(unsolvedSudoku[row,col] == 0)
-                    {
-                        int[] possilbeVaues = GetPossileValues(unsolvedSudoku, row, col);
-                    }
+            var possibleValuesList = new List<PossibleValues>();
 
+            while (true)
+            {               
+                for (int row = 0; row < 9; row++)
+                {
+                    for (int col = 0; col < 9; col++)
+                    {
+                        if (sudoku[row, col] == 0)
+                        {
+                            if (possibleValuesList.Count() == 0)
+                            {
+                                List<int> possilbeVaues = GetPossileValues(sudoku, row, col);
+
+                                if (possilbeVaues.Count() == 1)
+                                {
+                                    sudoku[row, col] = possilbeVaues.FirstOrDefault();
+                                }
+                                else if (possilbeVaues.Count() > 1)
+                                {
+                                    possibleValuesList.Add(new PossibleValues
+                                    {
+                                        Row = row,
+                                        Col = col,
+                                        Values = possilbeVaues
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
+
+                if (possibleValuesList.Count() == 0)
+                    break;
             }
         }
 
-        private static int[] GetPossileValues(int[,] unsolvedSudoku, int row, int col)
+        private static List<int> GetPossileValues(int[,] unsolvedSudoku, int row, int col)
         {
             List<int> posibleValues = new List<int>(PossilbeValues);
-            
+
+            posibleValues.Remove(unsolvedSudoku[row, col]);
+
             //Eliminate Row values
             for (int tempCol = 0; tempCol < 9; tempCol++)
             {
-                if (unsolvedSudoku[row, tempCol] != 0)
+                if (unsolvedSudoku[row, tempCol] != 0 && tempCol != col)
                 {
                     posibleValues.Remove(unsolvedSudoku[row, tempCol]);
                 }
@@ -55,19 +74,19 @@ namespace Algorithms
             //Eliminate Column values
             for (int tempRow = 0; tempRow < 9; tempRow++)
             {
-                if (unsolvedSudoku[tempRow, col] != 0)
+                if (unsolvedSudoku[tempRow, col] != 0 && tempRow != row)
                 {
                     posibleValues.Remove(unsolvedSudoku[tempRow, col]);
                 }
             }
 
             //Eliminate sub-matrix values
-            GetSubMatrixPossileValues(unsolvedSudoku, posibleValues, row, col);
+            RemoveSubMatrixValues(unsolvedSudoku, posibleValues, row, col);
 
-            return posibleValues.ToArray();
+            return posibleValues;
         }
 
-        private static void GetSubMatrixPossileValues(int[,] unsolvedSudoku, List<int> posibleValues, int row, int col)
+        private static void RemoveSubMatrixValues(int[,] unsolvedSudoku, List<int> posibleValues, int row, int col)
         {
             int rowStart, colStart, rowEnd, colEnd;
            
@@ -77,7 +96,7 @@ namespace Algorithms
             } 
             else if(row > 2 && row < 6)
             {
-                rowStart = 5;
+                rowStart = 3;
             } else
             {
                 rowStart = 6;
@@ -101,8 +120,14 @@ namespace Algorithms
 
             for(int i = rowStart; i <= rowEnd; i++)
             {
-                for(int j= colStart; i <= colEnd; j++)
+                if (i == row)
+                    continue;
+
+                for(int j= colStart; j <= colEnd; j++)
                 {
+                    if (j == col)
+                        continue;
+
                     if (unsolvedSudoku[i, j] != 0)
                     {
                         posibleValues.Remove(unsolvedSudoku[i, j]);
