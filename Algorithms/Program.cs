@@ -32,9 +32,9 @@ namespace Algorithms
                 }
                 Console.WriteLine();
             }
-            //Sudoku.Solve(unsolvedSudoku);
+            Sudoku.Solve(unsolvedSudoku);
 
-            SudokuSolver.SolveSudoku(unsolvedSudoku, 0, 0);
+            //SudokuSolver.SolveSudoku(unsolvedSudoku, 0, 0);
 
             Console.WriteLine("\n\n Solved Sudoku:");
             for (int row = 0; row < 9; row++)

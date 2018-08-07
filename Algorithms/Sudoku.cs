@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Algorithms.Sudoku;
 
 namespace Algorithms
 {
@@ -16,67 +17,118 @@ namespace Algorithms
         }
 
         static int[] PossilbeValues = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-         
+
+        static List<PossibleValues> PossibleValuesList = new List<PossibleValues>();
+
+
         public static void Solve(int[,] sudoku)
+        {           
+            GetPossibleValuesList(sudoku);
+            SolveSudoku(sudoku);
+        }
+
+        private static bool SolveSudoku(int[,] sudoku)
         {
-            var possibleValuesList = new List<PossibleValues>();
+            var emptyCell = GetEmptyCell(sudoku);
+            if(emptyCell.row == -1)
+            {
+                return true;
+            }
 
-            while (true)
-            {               
-                for (int row = 0; row < 9; row++)
+            foreach (var possibleValue in PossibleValuesList.First(x => x.Row == emptyCell.row && x.Col == emptyCell.col).Values)
+            {
+                if(IsValidCellValue(sudoku, emptyCell.row, emptyCell.col, possibleValue))
                 {
-                    for (int col = 0; col < 9; col++)
-                    {
-                        if (sudoku[row, col] == 0)
-                        {
-                            if (possibleValuesList.Count() == 0)
-                            {
-                                List<int> possilbeVaues = GetPossileValues(sudoku, row, col);
+                    sudoku[emptyCell.row, emptyCell.col] = possibleValue;
 
-                                if (possilbeVaues.Count() == 1)
-                                {
-                                    sudoku[row, col] = possilbeVaues.FirstOrDefault();
-                                }
-                                else if (possilbeVaues.Count() > 1)
-                                {
-                                    possibleValuesList.Add(new PossibleValues
-                                    {
-                                        Row = row,
-                                        Col = col,
-                                        Values = possilbeVaues
-                                    });
-                                }
-                            }
+                    if(SolveSudoku(sudoku))
+                    {
+                        return true;
+                    }
+
+                    sudoku[emptyCell.row, emptyCell.col] = 0;                  
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsValidCellValue(int[,] sudoku, int row, int col, int possibleValue)
+        {
+            int rowStart, colStart;
+
+            rowStart = (row / 3) * 3;
+            colStart = (col / 3) * 3;
+
+            for (int temp = 0; temp < 9; temp++)
+            {
+                if (sudoku[row, temp] == possibleValue) return false;
+                if (sudoku[temp, col] == possibleValue) return false;
+                if (sudoku[rowStart + (temp % 3), colStart + (temp % 3)] == possibleValue) return false;
+            }
+
+            return true;
+        }
+
+        private static (int row, int col) GetEmptyCell(int[,] sudoku)
+        {   
+            for (int row = 0; row < 9; row++)
+            {
+                for (int col = 0; col < 9; col++)
+                {
+                    if (sudoku[row, col] == 0)
+                    {
+                        return (row, col);
+                    }
+                }
+            }
+
+            return ( -1,  -1);
+        }
+
+        private static void GetPossibleValuesList(int[,] sudoku)
+        {
+            for (int row = 0; row < 9; row++)
+            {
+                for (int col = 0; col < 9; col++)
+                {
+                    if (sudoku[row, col] == 0)
+                    {
+                        List<int> possilbeVaues = GetPossileValues(sudoku, row, col);
+
+                        if (possilbeVaues.Count() == 1)
+                        {
+                            sudoku[row, col] = possilbeVaues.FirstOrDefault();
+                        }
+                        else if (possilbeVaues.Count() > 1)
+                        {
+                            PossibleValuesList.Add(new PossibleValues
+                            {
+                                Row = row,
+                                Col = col,
+                                Values = possilbeVaues
+                            });
                         }
                     }
                 }
-
-                if (possibleValuesList.Count() == 0)
-                    break;
-            }
+            }             
         }
 
         private static List<int> GetPossileValues(int[,] unsolvedSudoku, int row, int col)
         {
             List<int> posibleValues = new List<int>(PossilbeValues);
 
-            posibleValues.Remove(unsolvedSudoku[row, col]);
-
-            //Eliminate Row values
-            for (int tempCol = 0; tempCol < 9; tempCol++)
+            //Eliminate Row and Column values
+            for (int temp = 0; temp < 9; temp++)
             {
-                if (unsolvedSudoku[row, tempCol] != 0 && tempCol != col)
+                if (unsolvedSudoku[row, temp] != 0 && temp != col)
                 {
-                    posibleValues.Remove(unsolvedSudoku[row, tempCol]);
+                    posibleValues.Remove(unsolvedSudoku[row, temp]);
                 }
-            }
 
-            //Eliminate Column values
-            for (int tempRow = 0; tempRow < 9; tempRow++)
-            {
-                if (unsolvedSudoku[tempRow, col] != 0 && tempRow != row)
+                if (unsolvedSudoku[temp, col] != 0 && temp != row)
                 {
-                    posibleValues.Remove(unsolvedSudoku[tempRow, col]);
+                    posibleValues.Remove(unsolvedSudoku[temp, col]);
                 }
             }
 
@@ -89,31 +141,9 @@ namespace Algorithms
         private static void RemoveSubMatrixValues(int[,] unsolvedSudoku, List<int> posibleValues, int row, int col)
         {
             int rowStart, colStart, rowEnd, colEnd;
-           
-            if(row < 3)
-            {
-                rowStart = 0;
-            } 
-            else if(row > 2 && row < 6)
-            {
-                rowStart = 3;
-            } else
-            {
-                rowStart = 6;
-            }
 
-            if(col < 3)
-            {
-                colStart = 0;
-            } 
-            else if(col > 2 && col < 6)
-            {
-                colStart = 3;
-            }
-            else
-            {
-                colStart = 6;
-            }
+            rowStart = (row / 3) * 3;
+            colStart = (col / 3) * 3;
 
             rowEnd = rowStart + 2;
             colEnd = colStart + 2;
